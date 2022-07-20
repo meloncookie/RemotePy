@@ -14,7 +14,7 @@ The supported version is v1.17 or higher.
 
 The send process uses a board-specific experimental micropython API.
 There is a risk that it will not work due to changes in specifications in the future.
-I have confirmed the operation up to v1.18.(2022/06/12)
+I have confirmed the operation up to v1.19.(2022/07)
 
 A sample program is also available for immediate use.
 You can try infrared remote control data acquisition /
@@ -35,11 +35,12 @@ transmission with GUI application software for PC.
         + micropython/RP2040/FromV1_17/UpyIrTx.py
 
 3. Demo micropython main firmware
-    + demo/micropython/main.py
+    + For M5Stack ATOM(Lite & MATRIX) : demo/M5StackATOM/micropython/main.py
+    + For RP2040 (Raspberry Pi Pico) : demo/RP2040/micropython/main.py
 
 4. Demonstration PC side python application software
-    + demo/GUI/main.py
-
+    + For M5Stack ATOM(Lite & MATRIX) : demo/M5StackATOM/GUI
+    + For RP2040 (Raspberry Pi Pico) : demo/RP2040/GUI
 ---
 
 ## Program procedure on the microcomputer board side
@@ -365,8 +366,16 @@ You can easily collect signals from the infrared remote controller and test the 
 * Can be edited by calling a new or existing json file
 * Can be tested by sending a recording signal
 
-### *Microcomputer side preparation*
+> --- caution ---
+> 
+> The main.py written to the microcomputer is automatically executed after the power is turned on.
+> Inside main.py, the keystroke input () is in an infinite loop.
+> In this state, writing the program to the microcomputer will be blocked.
+> If you want to return to the REPL environment,
+> use the terminal software for serial communication and enter a line feed after the q key.
+> (Or Ctrl+c)
 
+### *Microcomputer side preparation For M5Stack ATOM(Lite & Matrix)*
 
 The demo program runs on a system with
 [M5Stack ATOM](https://docs.m5stack.com/en/core/atom_matrix)
@@ -374,7 +383,17 @@ and [IR REMOTE UNIT](https://docs.m5stack.com/en/unit/ir) connected via a Grove 
 Write the three files "main.py", "UpyIrRx.py", and "UpyIrTx.py" to the microcomputer.
 As in the REPL environment, connect the PC side and M5Stack with a USB cable.
 
-When using another system, rewrite the following pin arrangement in the source code.
+If you want to use another ESP32 module, modify the source code as shown in main.py below.
+
+### *Microcomputer side preparation For RP2040(Raspberry Pi Pico)*
+
+Write the three files "main.py", "UpyIrRx.py", and "UpyIrTx.py" to the microcomputer.
+An external infrared transmitter / receiver circuit can be connected to any GPIO pin.
+In this example,
+Connect the output of the infrared remote control light receiving module to GPIO Pin.18,
+The infrared remote control transmission signal is connected to GPIO Pin.19.
+
+If you want to use other pins, rewrite the following pin layout in the source code.
 
 **Modifications of main.py**
 ```python
@@ -385,8 +404,8 @@ _GROVE_PIN = {'ATOM':  (32, 26),
               'FIRE':  (22, 21),
               'GO':    (22, 21),
               'Stick': (33, 32),
-              'Else':  (32, 12)}  # Rewrite (RxPin Number, TxPin Number)
-_DEVICE = 'ATOM'                  # Rewrite 'Else'
+              'Else':  (18, 19)}  # Rewrite (RxPin Number, TxPin Number)
+_DEVICE = 'Else'                  # Rewrite 'Else'
 _TX_IDLE_LEVEL = const(0)         # Sender idle_level(Invalid when using RP2040)
 _TX_FREQ = const(38000)           # Sender modulation frequency(Invalid when using RP2040)
 _TX_DUTY = const(30)              # Sender duty ratio(Invalid when using RP2040)
@@ -408,15 +427,15 @@ It uses the GUI framework Tkinter.
    `$ pip install pyserial`
 
 3. The python program consists of 6 files.
-   Modify the following parts of communication.py according to your system.
+   
+4. If you want to use a microcomputer board other than the sample example, modify the following part of communication.py.
    Specify the vendor ID (VID) and product ID (PID) of the USB device.
-   The sample program is an example of M5Stack ATOM.
    These IDs can be easily found from your PC.
 
    ```python
    class Communication():
-        _DEFAULT_VID = 1027
-        _DEFAULT_PID = 24577
+        _DEFAULT_VID = 1027   # A unique USB VID is assigned to each microcomputer board.
+        _DEFAULT_PID = 24577  # Also USB PID
     ```
 
     | Type | VID | PID |

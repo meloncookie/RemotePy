@@ -19,7 +19,7 @@ Arduino 版には、便利なライブラリ
 
 送信側の処理は、ボード固有の実験的 micropython API を使用しています。
 将来仕様の変更に伴い、動作しなくなるリスクがあります。
-(2022/5 現在 v1.18 までは動作確認しております。)
+(2022/7 現在 v1.19 までは動作確認しております。)
 
 すぐに使えるように、サンプルプログラムも用意しています。PC側の
 GUI アプリケーションソフトで、赤外線リモコンデータ収集/送信を、
@@ -40,10 +40,12 @@ GUI アプリケーションソフトで、赤外線リモコンデータ収集/
         + micropython/RP2040/FromV1_17/UpyIrTx.py
 
 3. デモ用の micropython メインファームウェア
-    + demo/micropython/main.py
+    + M5Stack ATOM(Lite & MATRIX) 用 : demo/M5StackATOM/micropython/main.py
+    + RP2040 (Raspberry Pi Pico) 用 : demo/RP2040/micropython/main.py
 
 4. デモ用の PC 側 python アプリケーションソフト
-    + demo/GUI/main.py
+    + M5Stack ATOM(Lite & MATRIX) 用 : demo/M5StackATOM/GUI
+    + RP2040 (Raspberry Pi Pico) 用 : demo/RP2040/GUI
 
 ---
 
@@ -339,7 +341,15 @@ if signal_list:
 * 新規または、既存 jsonファイルを呼び出して編集可能
 * その場で記録信号を送信しテスト可能
 
-### *マイコン側準備*
+> --- 注意 ---
+> 
+> マイコンに書込んだ main.py は、電源投入後に自動的に実行されます。
+> main.py の内部では、キー入力 input() が無限ループされています。
+> このままでは、マイコンへのプログラム書込みがブロックされてしまいます。
+> REPL環境に戻りたい場合は、ターミナルソフトでシリアル通信して、
+> q キーの後改行を入力してください。(又は Ctrl+C キーも可です。)
+
+### *マイコン側準備 M5Stack ATOM(Lite & Matrix) 版*
 
 デモプログラムでは、[M5Stack ATOM](https://docs.m5stack.com/en/core/atom_matrix) と、
 [IR REMOTE UNIT](https://docs.m5stack.com/en/unit/ir) を Grove コネクタで接続した
@@ -347,7 +357,17 @@ if signal_list:
 3つのファイルを書込みます。REPL環境下と同じく、PC側と M5Stack 間を、USBケーブルで
 接続します。
 
-他のシステムを利用する場合は、ソースコードの以下のピン配置を書き換えます。
+他のESP32モジュールを使用する場合は、下記の main.py の通りに、ソースコードを修正します。
+
+### *マイコン側準備 RP2040(Raspberry Pi Pico) 版*
+
+マイコンに、"main.py", "UpyIrRx.py", "UpyIrTx.py" の
+3つのファイルを書込みます。
+任意のGPIOピンに、外付け赤外線送受信回路を接続出来ます。本例では、
+赤外線リモコン受光モジュールの出力をGPIO Pin.18 に接続し、
+赤外線リモコン送信信号をGPIO Pin.19 に接続しています。
+
+他のピンを利用する場合は、ソースコードの以下のピン配置を書き換えます。
 
 **main.py の修正箇所**
 ```python
@@ -358,8 +378,8 @@ _GROVE_PIN = {'ATOM':  (32, 26),
               'FIRE':  (22, 21),
               'GO':    (22, 21),
               'Stick': (33, 32),
-              'Else':  (32, 12)}  # (RxPin番号, TxPin番号) に書換え
-_DEVICE = 'ATOM'                  # 'Else' に書換え
+              'Else':  (18, 19)}  # (RxPin番号, TxPin番号) に書換え
+_DEVICE = 'Else'                  # 'Else' に書換え
 _TX_IDLE_LEVEL = const(0)         # 送信側の idle_level(RP2040使用時は無効)
 _TX_FREQ = const(38000)           # 送信側 ON区間の変調周波数(RP2040使用時は無効)
 _TX_DUTY = const(30)              # 送信側 ON区間のDuty比(RP2040使用時は無効)
@@ -379,15 +399,16 @@ GUIフレームワーク Tkinter を用いています。
 
    `$ pip install pyserial`
 
-3. pythonプログラムは6つのファイルから構成されています。そのうち communication.py の以下の箇所を
-   、システムに応じて修正します。マイコン側 USBデバイスの、ベンダID(VID) とプロダクトID(PID) を
-   指定します。サンプルプログラムは、M5Stack ATOM の事例です。これらの ID は PC から
-   容易に調べることが出来ます。
+3. pythonプログラムは6つのファイルから構成されています。
+
+4. サンプル事例以外のマイコンボードを使う場合は、communication.py の以下の箇所を修正します。
+   マイコン側 USBデバイスの、ベンダID(VID) とプロダクトID(PID) を指定します。
+   これらの ID は PC から容易に調べることが出来ます。
 
    ```python
    class Communication():
-        _DEFAULT_VID = 1027
-        _DEFAULT_PID = 24577
+        _DEFAULT_VID = 1027   # マイコンボード毎に固有のUSB VIDが割り振られている。
+        _DEFAULT_PID = 24577  # 同じくUSB PID
     ```
 
     | Type | VID | PID |
@@ -397,7 +418,7 @@ GUIフレームワーク Tkinter を用いています。
     | Raspberry Pi Pico | 11914 | 5 |
     | | | |
 
-4. プログラムの起動は `$ python main.py` です。
+5. プログラムの起動は `$ python main.py` です。
 
 ### *PC側アプリケーションソフトの使い方*
 
